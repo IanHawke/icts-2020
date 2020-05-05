@@ -1,4 +1,4 @@
-all: pdfs/exercises.pdf pdfs/handout.pdf
+all: pdfs/exercises.pdf pdfs/reading_list.pdf
 
 clean:
 	rm -f pdfs/*pdf
