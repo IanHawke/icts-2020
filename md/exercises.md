@@ -551,6 +551,27 @@ Using a similar method for the minimum, show the scheme is monotone.
 4. Find a suitable reference for *Godunov's theorem*, which shows that a *linear* monotone scheme is at most first order accurate.
 5. The *linear* in Godunov's theorem means that the stencil (the points that it contains and the weights associated with each point) cannot depend on the data. The crucial step in developing useful codes for evolving matter is to get around this: the schemes will depend on the data.
 
+### Stiffness
+
+Most of the discussion above has been about the flux terms, linked to the hyperbolic partial derivatives in space. However, there can be numerical problems from the sources terms as well.
+
+A specific example arises in electromagnetism where the electric field is sourced by the charge current. In models including *resistivity*, the charge current has a term proportional to $\eta^{-1}$, where $\eta$ quantifies the amount of resistance to charge flowing. In the ideal MHD limit (which applies to *most* of the problems we're interested in over *most*, but *not all* of the spacetime) $\eta \to 0$.
+
+As a toy model consider
+$$
+  \frac{\text{d} q}{\text{d} t} = -\frac{1}{\eta} q,
+$$
+where $\eta$ is small and positive.
+
+1. Write down Euler's method to solve this ODE, to get
+$$
+  q^{n+1} = \left( 1 - \frac{\Delta t}{eta} \right) q^n.
+$$
+2. Assume the initial data is $q(0) = 1$. Solve the ODE exactly and show that $q \to 0$ as $t \to \infty$.
+3. Solve the discrete relation from Euler's equation explicitly. Show that $q^N \to 0$ as $N \to \infty$ *only if* $\Delta t < \eta$.
+4. Apply the backward difference formula to the original ODE to get the implicit backward Euler method. Show that this has the correct late time behaviour for all timesteps.
+5. The $\eta$ term here is setting a timescale in the problem. Near the ideal MHD it would be very short: much shorter than the timescales resulting from the stability requirements of the hyperbolic flux terms. Systems that need to cover a wide range of timescales are often called *stiff*, and are more complex and expensive to solve. The use of implicit methods outlined here is standard, but expensive when applied to nonlinear problems. This will be important when including short-range reaction and interaction terms that rapidly push the system to an equilibrium, often called *relaxation problems*.
+
 ## Numerical Implementation
 
 There should be code that you can use and extend available in the repository.
