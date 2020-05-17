@@ -16,3 +16,7 @@ Full solutions are provided in Python, as well as stub codes (to remove some of 
 * `numba` (useful, not essential)
 
 I recommend the [Anaconda distribution](https://www.anaconda.com/products/individual) if you don't already have this installed.
+
+### Stub codes
+
+In the `coding_exercises` directory there are the `solutions` (mostly complete, but could be extended) and the `stubs`. The bulk of the code is there: all class and function definitions are complete, as is all the plotting code. Look for `#! To be completed` to find the required lines. Much that needs completing is in the `systems` directory, containing the classes for each separate system, but some lines are missing from the methods code at the top level as well.
