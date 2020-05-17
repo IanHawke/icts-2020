@@ -1,5 +1,5 @@
 """
-Exercise 13: Spherical coordinates and the Sedov problem
+Exercise 13: Spherical coordinates and the Sod problem
 """
 
 import numpy
@@ -9,9 +9,9 @@ from lib import grids, boundary_conditions, weno
 from systems.euler_spherical import EulerSpherical
 
 
-def initial_data_sedov(system, r):
+def initial_data_spherical_sod(system, r):
     """
-    The Sedov blast wave. Assumes gamma=7/5
+    The Sod problem on a sphere. Assumes gamma=7/5
 
     Parameters
     ----------
@@ -27,14 +27,16 @@ def initial_data_sedov(system, r):
     """
     gamma = system.gamma
     assert numpy.allclose(gamma, 7/5)
-    
-    r_init = 0.1
-    
-    rho = numpy.ones_like(r)
-    v = numpy.zeros_like(r)
+
+    r_init = 0.4
+
+    rho = numpy.where(r < r_init,
+                      numpy.ones_like(r),
+                      0.125 * numpy.ones_like(r))
     p = numpy.where(r < r_init,
-                    3 * (gamma-1) / (4 * numpy.pi * r_init**3) * numpy.ones_like(r),
-                    1e-2 * numpy.ones_like(r))
+                    numpy.ones_like(r),
+                    0.1 * numpy.ones_like(r))
+    v = numpy.zeros_like(r)
     e = p / (gamma-1)
     return system.p2c(rho, v, e, r)
 
@@ -58,14 +60,14 @@ def weno_fvs_step(q, g, flux, order=2):
     -------
     q_rhs : array of float
         The update to take the solution to q at t^{n+1}
-        
+
     Notes
     -----
     Compare the update formula carefully with the upwind scheme.
     The f_rusanov is now an intercell flux, so f_rusanov[i] is the flux through x[i-1/2].
     This means the indics are off-by-one compared to the upwind scheme.
     """
-    
+
     # Then evolve, computing the source first
     q_rhs = system.source(q, g.r)
     f = flux(q, g.r)
@@ -75,17 +77,17 @@ def weno_fvs_step(q, g, flux, order=2):
     f_p_L = numpy.zeros_like(q)
     f_m_R = numpy.zeros_like(q)
     f_fvs = numpy.zeros_like(q)
-    
+
     for i in range(g.ngz - 1, g.nr + g.ngz + 1):
         for k in range(q.shape[1]):
             # Reconstruct f plus to the right to get the state to the Left of the interface
             f_p_L[i+1, k] = weno.weno(f_p[i-(order-1):i+order, k], order)
             # Reconstruct f minus to the left to get the state to the Right of the interface
             f_m_R[i, k] = weno.weno(f_m[i-(order-1):i+(order), k][::-1], order)
-        
+
     for i in range(g.ngz, g.nr + g.ngz + 1):
         f_fvs[i, :] = f_p_L[i, :] + f_m_R[i, :]
-    
+
     for i in range(g.ngz, g.nr + g.ngz):
         q_rhs[i, :] += 1.0 / g.dr * (f_fvs[i, :] - f_fvs[i+1, :])
 
@@ -122,12 +124,12 @@ def weno_fvs(nr, t_end, system,
     q : array of float
         Solution at the final time.
     """
-    
+
     ngz = weno_order  # WENO schemes of order 2k-1 need k ghostzones
-    
+
     g = grids.GridSpherical([0, 0.5], nr, ngz, cfl_factor)
     q = initial_data(system, g.r)
-    
+
     t = 0
     first_step = True
     while t < t_end:
@@ -154,9 +156,9 @@ def weno_fvs(nr, t_end, system,
 
 
 if __name__ == "__main__":
-    
+
     system = EulerSpherical(gamma=7/5)
-    
+
     # Solve for the toy star problem: low resolution
     nr = 800
     for t_end in [0.001, 0.005]:

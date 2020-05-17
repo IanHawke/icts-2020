@@ -911,10 +911,11 @@ $$
 with other standard definitions as above. The velocity $v$ is interpreted as the component in the radial direction.
 
 1. Extend your WENO Newtonian Euler code to spherical coordinates.
-2. Solve the Sedov blast wave or spherical explosion problem, where the initial data is (using $\gamma=7/5$)
+2. Solve the spherical Sod problem, where the initial data is (using $\gamma=7/5$)
 $$
-  \begin{pmatrix} \rho \\ v \\ p \end{pmatrix} = \begin{cases} \begin{pmatrix} 1 \\ 0 \\ \frac{3 (\gamma - 1)}{4 \pi \times 10^{-6}} \end{pmatrix} & r < 0.1 \\ \begin{pmatrix} 1 \\ 0 \\ 10^{-5} \end{pmatrix} & r > 0.1 \end{cases}.
+  \begin{pmatrix} \rho \\ v \\ p \end{pmatrix} = \begin{cases} \begin{pmatrix} 1 \\ 0 \\ 1 \end{pmatrix} & r < 0.4 \\ \begin{pmatrix} 0.125 \\ 0 \\ 0.1 \end{pmatrix} & r > 0.4 \end{cases}.
 $$
+Look at the solution at $t = 0.15$
 3. If you wanted to implement a reconstruction-solution method, like slope limiting, there can be issues. With a finite volume grid there is a cell interface at $r=0$. To compute the flux, we need the conserved and primitive variables, which are linked by the "metric determinant" $r^2$, which degenerates there. Think how you might avoid this problem. Would you expect similar problems in relativity?
 
 ### TOV and GR
