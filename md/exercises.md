@@ -902,6 +902,10 @@ The codes implemented so far will fail in vacuum, as the conversion between cons
 3. Study the convergence behaviour with grid resolution at $t=1$ (using say 100, 200 and 400 cells). In what sense do the results converge?
 4. Revisit the questions on vacuum generation and well balancing in the light of your results here.
 
+<!--
+
+The singular metric determinant issues kill these two exercises. Need to factor out the r**2 term, but that makes it not like the 3+1 case, so these aren't useful.
+
 ### Spherical symmetry
 
 As a simple model of introducing the geometric terms into the equations, look at the Newtonian Euler equations in spherical symmetry. These can be written in the form
@@ -940,6 +944,7 @@ The *mass aspect function* is $m = r (1 - a^{-2}) / 2$. We use the *Cowling appr
 
 1. Extend your code from the Newtonian equations to the GR equations.
 2. Using the provided code to get initial data for a TOV "neutron star", evolve it to study its stability.
+-->
 
 ### Higher dimensions
 

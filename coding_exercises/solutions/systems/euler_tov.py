@@ -75,9 +75,12 @@ def f_for_c2p(pbar, D, S, tau, a, gamma):
 
 class EulerTOV(object):
     
-    def __init__(self, gamma, r, initial_data_tov):
+    def __init__(self, gamma, r, initial_data_tov, rho_atmosphere=1e-10,
+                 epsilon_atmosphere=1e-10):
         self.gamma = gamma
         self.r = r
+        self.rho_atmosphere = rho_atmosphere
+        self.epsilon_atmosphere = epsilon_atmosphere
         q0, alpha, a = initial_data_tov(r)
         self.q0 = q0
         self.alpha = alpha
@@ -89,6 +92,14 @@ class EulerTOV(object):
     
     def p2c(self, rho, v, epsilon):
         q = numpy.zeros([len(rho), 3])
+        # Impose atmosphere based on rho
+        v[rho < self.rho_atmosphere] = 0
+        epsilon[rho < self.rho_atmosphere] = self.epsilon_atmosphere
+        rho[rho < self.rho_atmosphere] = self.rho_atmosphere
+        # Impose atmosphere based on epsilon
+        v[epsilon < self.epsilon_atmosphere] = 0
+        rho[epsilon < self.epsilon_atmosphere] = self.rho_atmosphere
+        epsilon[epsilon < self.epsilon_atmosphere] = self.epsilon_atmosphere
         W = 1 / numpy.sqrt(1 - self.a**2 * v**2)
         p = self.p_from_eos(rho, epsilon)
         h = 1 + epsilon + p / rho
@@ -108,10 +119,23 @@ class EulerTOV(object):
         cs = numpy.zeros_like(rho)
         for i in range(len(q)):
             D, S, tau = q[i, :] / self.a[i] / self.r[i]**2
-            pmin = max(1e-10, abs(S) - tau - D)
+            # Impose atmosphere on D, tau
+            if D < self.rho_atmosphere or tau < self.rho_atmosphere:
+                D = self.rho_atmosphere
+                S = 0
+                tau = self.rho_atmosphere
+            pmin = 1e-30
             root_result = root_scalar(f_for_c2p, args=(D, S, tau, self.a[i], self.gamma), method='brentq', bracket=[pmin, 1e10])
             pbar = root_result.root
-            rho[i], v[i], epsilon[i], W[i], h[i] = prims_given_p(pbar, D, S, tau, self.a, self.gamma)
+            rho[i], v[i], epsilon[i], W[i], h[i] = prims_given_p(pbar, D, S, tau, self.a[i], self.gamma)
+            # Impose atmosphere again
+            if rho[i] < self.rho_atmosphere:
+                v[i] = 0.0
+                rho[i] = self.rho_atmosphere
+                epsilon[i] = self.epsilon_atmosphere
+                W[i] = 1.0
+                pbar = self.rho_atmosphere * self.epsilon_atmosphere
+                h[i] = 1.0 + 2 * epsilon[i]
             p[i] = pbar
             cs[i] = numpy.sqrt(self.gamma * p[i] / (rho[i] * h[i]))
         return rho, v, epsilon, p, W, h, cs

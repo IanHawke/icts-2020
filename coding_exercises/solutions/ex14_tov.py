@@ -1,46 +1,12 @@
 """
-Exercise 13: Spherical coordinates and the Sod problem
-
-This problem is broken and I don't have time to fix it.
+Exercise 14: TOV star
 """
 
 import numpy
 from matplotlib import pyplot
 
-from lib import grids, boundary_conditions, weno
-from systems.euler_spherical import EulerSpherical
-
-
-def initial_data_spherical_sod(system, r):
-    """
-    The Sod problem on a sphere. Assumes gamma=7/5
-
-    Parameters
-    ----------
-    system : Class
-        An EulerToyStar.
-    r : array of float
-        Coordinates
-
-    Returns
-    -------
-    q : array of float
-        The initial data
-    """
-    gamma = system.gamma
-    assert numpy.allclose(gamma, 7/5)
-
-    r_init = 0.4
-
-    rho = numpy.where(r < r_init,
-                      numpy.ones_like(r),
-                      0.125 * numpy.ones_like(r))
-    p = numpy.where(r < r_init,
-                    numpy.ones_like(r),
-                    0.1 * numpy.ones_like(r))
-    v = numpy.zeros_like(r)
-    e = p / (gamma-1)
-    return system.p2c(rho, v, e, r)
+from lib import grids, boundary_conditions, weno, tov
+from systems.euler_tov import EulerTOV
 
 
 def weno_fvs_step(q, g, flux, order=2):
@@ -71,9 +37,9 @@ def weno_fvs_step(q, g, flux, order=2):
     """
 
     # Then evolve, computing the source first
-    q_rhs = system.source(q, g.r)
-    f = flux(q, g.r)
-    alpha = abs(system.max_lambda(q, g.r))
+    q_rhs = system.source(q)
+    f = flux(q)
+    alpha = abs(system.max_lambda(q))
     f_p = (f + alpha * q) / 2
     f_m = (f - alpha * q) / 2
     f_p_L = numpy.zeros_like(q)
@@ -97,10 +63,10 @@ def weno_fvs_step(q, g, flux, order=2):
 
 
 def weno_fvs(nr, t_end, system,
-             cfl_factor=0.5, initial_data=initial_data_spherical_sod,
-             bc_form="spherical_euler", weno_order=2):
+             g,
+             bc_form="spherical_euler", weno_order=2, cfl_factor=0.9):
     """
-    Solve a conservation law on [0, 1] using N gridpoints to t=t_end.
+    Solve a conservation law on [0, 10] using N gridpoints to t=t_end.
 
     Parameters
     ----------
@@ -127,19 +93,13 @@ def weno_fvs(nr, t_end, system,
         Solution at the final time.
     """
 
-    ngz = weno_order  # WENO schemes of order 2k-1 need k ghostzones
-
-    g = grids.GridSpherical([0, 1], nr, ngz, cfl_factor)
-    q = initial_data(system, g.r)
+    q = system.q0.copy()
 
     t = 0
-    first_step = True
     while t < t_end:
+        print("Step", g.dt)
         # Compute the maximum safe timestep
-        g.dt = cfl_factor * g.dr / system.max_lambda(q, g.r)
-        if first_step:
-            first_step = False
-            g.dt *= 0.1
+        g.dt = cfl_factor * g.dr / system.max_lambda(q)
         # Update current time
         if t + g.dt > t_end:
             g.dt = t_end - t
@@ -159,14 +119,15 @@ def weno_fvs(nr, t_end, system,
 
 if __name__ == "__main__":
 
-    system = EulerSpherical(gamma=7/5)
-
-    # Solve for the spherical Sod problem
     nr = 100
-    for t_end in [0.00005]:
-        r, q = weno_fvs(nr, t_end, system, weno_order=2, cfl_factor=0.5)
-        prims = system.c2p(q, r)
-        labels = [r"$\rho$", r"$v$", r"$e$", r"$p$", r"$c_s$"]
+    g = grids.GridSpherical([0, 10], nr, ngz=2, cfl_factor=0.5)
+    system = EulerTOV(2, g.r, tov.initial_data_tov)
+
+    # Solve for the TOV problem
+    for t_end in [0.5]:
+        r, q = weno_fvs(nr, t_end, system, g, weno_order=2, cfl_factor=0.5)
+        prims = system.c2p(q)
+        labels = [r"$\rho$", r"$v$", r"$\epsilon$", r"$p$", r"$c_s$"]
         fig, axes = pyplot.subplots(2, 2)
         for p, ax, label in zip(prims, axes.flatten(), labels):
             ax.plot(r, p)
