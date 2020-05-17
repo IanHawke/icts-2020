@@ -133,6 +133,65 @@ $$
 are recovered at leading order for the momentum equations, but only at second order for the energy equation.
 6. Go back to the (SR or GR) equations and define $\tau = E - D$. Replace the energy equation with the appropriate equation for $\tau$, take the Newtonian limit, and show the correct equation appears at leading order. This can be important in simulations: near equilibrium the continuity and energy equations can degenerate without this modification.
 
+### Action principles
+
+Lagrangian and Hamiltonian methods are incredibly powerful, but can be tricky to apply to certain models.
+
+To use them for relativistic fluids, we define the number flux 4-vector $n^a$. Its norm $n$ is found from $n^2 = - n^a n_a$ is related to the specific rest mass density $\rho_0$ using the mass per particle $m_b$, as $\rho_0 = m_b n$. The full number flux $n^a = n u^a$, where $u^a$ is the standard 4-velocity.
+
+We then look at the energy $\Lambda$ which will be a function only of the number density, $\Lambda(n)$. This will play the role of our Lagrangian. The *conjugate momentum*
+$$
+  \mu_a = \frac{\partial \Lambda}{\partial n^a}
+$$
+is linked to the specific enthalpy, as $\mu = m_b h$.
+
+1. Start by assuming the action principle is given by
+$$
+  S = \int \sqrt{-g} \Lambda(n).
+$$
+Assuming the spacetime is fixed, use the standard calculus of variations approach to show
+$$
+  \mu_a \equiv 0.
+$$
+2. The previous result is clearly not what we want. By allowing the small variations to be unconstrained, we have allowed too much freedom. We know that the number flux must be conserved, $\nabla_a n^a = 0$. By adding this constraint as a Lagrange multiplier,
+$$
+  S = \int \sqrt{-g} \left[ \Lambda(n) + \lambda \nabla_a n^a \right],
+$$
+show that this implies
+$$
+  \omega_{ab} = \nabla_{[a} \mu_{b]} = 0.
+$$
+The quantity $\omega_{ab}$ is the *vorticity* and this is showing the fluid is irrotational.
+3. Again, this is stricter than we want, because we have still allowed too much freedom. It turns out that we want to impose that the variations act to perturb the flow lines normal to themselves. This imposes that
+$$
+  \delta n^a = -{\cal L}_{\xi} n^a - n^a \nabla_b \xi^b,
+$$
+where the Lagrangian displacements $\xi^a$ can be varied freely. Show that this implies
+$$
+  f_b = n^a \omega_{ab} = 0.
+$$
+4. This equation is equivalent to the Euler equation found from stress energy conservation, provided the pressure satisfies
+$$
+  \delta p = - n^a \delta \mu_a,
+$$
+so that
+$$
+  \nabla_b p = - n^a \nabla_b \mu_a.
+$$
+Check that this holds true for differentiable solutions.
+5. We can now extend this approach to multiple, distinguishable fluid species. This is needed for electrodynamics or superfluids. Assume we have two species with number fluxes $n_{\text{x}}^a$, where $\text{x} \in \{1, 2\}$ is the species label. Assume the energy depends on both the $n_{\text{x}}^2$ and $n_{\text{12}}^2 = -g_{ab} n_{\text{1}}^a n_{\text{2}}^b$. Show that the equations of motion are still
+$$
+  f^{\text{x}}_b = n_{\text{x}}^a \nabla_{[a} \mu^{\text{x}}_{b]} = 0.
+$$
+6. Check that the conjugate momentum for a species is only parallel to its number flux (in general) if
+$$
+  \frac{\partial^2 \Lambda}{\partial n^a_1 \partial n^b_2} = 0.
+$$
+This is the *entrainment* effect. The second species "drags" the first along with it via their interaction in the energy.
+7. For more detail on multifluids see the [Living Review of Andersson and Comer](https://link.springer.com/article/10.12942/lrr-2007-1). The impact of the entrainment on numerical simulations can be messy. See, for example, the argument in [Andersson et al](https://arxiv.org/abs/1610.00448) that entrained systems cannot be written in balance law form.
+
+\clearpage
+
 ## Numerical Theory
 
 ### Finite differencing
@@ -572,6 +631,8 @@ $$
 4. Apply the backward difference formula to the original ODE to get the implicit backward Euler method. Show that this has the correct late time behaviour for all timesteps.
 5. The $\eta$ term here is setting a timescale in the problem. Near the ideal MHD it would be very short: much shorter than the timescales resulting from the stability requirements of the hyperbolic flux terms. Systems that need to cover a wide range of timescales are often called *stiff*, and are more complex and expensive to solve. The use of implicit methods outlined here is standard, but expensive when applied to nonlinear problems. This will be important when including short-range reaction and interaction terms that rapidly push the system to an equilibrium, often called *relaxation problems*.
 
+\clearpage
+
 ## Numerical Implementation
 
 There should be code that you can use and extend available in the repository.
@@ -966,3 +1027,12 @@ In dimensional splitting each flux term is computed separately without consideri
 2. Evolve both smooth and discontinuous initial data (like a Gaussian pulse, or a top hat function) around one period. See how it smears out. Note that typically the timestep will need to be reduced by a factor of $D^{-1}$ or $D^{-1/2}$ where $D$ is the spatial dimension. It is usually easiest to find this by low-resolution experiments.
 
 ### Higher dimensions and MHD
+
+To really test your codes, try implementing Newtonian MHD in two dimensions. The simplest implementation uses divergence cleaning, by introducing the field $\psi = \nabla \cdot B$. The resulting equations of motion are
+$$
+  \partial_t \begin{pmatrix} \rho \\ \rho v_j \\ \rho \left( e + \tfrac{1}{2} v^2 \right) + \tfrac{1}{2} B^2 \\ B_j \\ \psi \end{pmatrix} + \partial_{i} \begin{pmatrix} \rho v^i \\ \rho v^i v_j + (p + \tfrac{1}{2} B^2) \delta^i_j - B^i B_j \\ \left( \rho \left( e + \tfrac{1}{2} v^2 \right) + p + B^2 \right) v^i - B^i B^k v_k \\ v^i B_j - B^i v_j + \psi \delta^i_j \\ B^i \end{pmatrix} = \begin{pmatrix} 0 \\ 0 \\ 0 \\ 0 \\ - \frac{\psi}{c_p^2} \end{pmatrix}.
+$$
+Here $c_p$ is a free parameter controlling how fast the damping occurs.
+
+1. Implement the equations of motion. Check that one dimensional constant states work, and that small perturbations propagate sensibly.
+2. Attempt the [Orszag-Tang vortex test](https://www.astro.princeton.edu/~jstone/Athena/tests/orszag-tang/pagesource.html). With a simple Python code it may be difficult to get a reasonable solution in the time available. At this point, you may wish to move on to more efficient codes.
